@@ -1,105 +1,90 @@
-[GeoV8.txt](https://github.com/user-attachments/files/25900257/GeoV8.txt)
+[GeoV9.txt](https://github.com/user-attachments/files/25902840/GeoV9.txt)
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 破解基礎防盜鏈，確保圖片能顯示 -->
+    <!-- 破解圖片防盜鏈 -->
     <meta name="referrer" content="no-referrer">
-    <title>終極評分版 - 香港地理達人</title>
+    <title>香港地理達人 (全平台支援)</title>
     
-    <!-- Tailwind CSS -->
+    <!-- 穩定 CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Panzoom JS (圖片縮放引擎) -->
-    <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <!-- Panzoom 縮放引擎 -->
+    <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
 
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: #111827; color: white; font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; }
-        #game-container { width: 100vw; height: 100vh; position: relative; }
+        /* 修復手機高度 Bug，全面使用 fixed 和 inset: 0 */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #111827; color: white; font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; overflow: hidden; position: fixed; }
         
-        #photo-wrapper {
-            width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1;
-            background-color: #1a202c; overflow: hidden;
-            display: flex; justify-content: center; align-items: center;
-            cursor: grab; touch-action: none;
-        }
+        .fullscreen-layer { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+        
+        /* 圖片區塊 */
+        #photo-wrapper { background-color: #1a202c; display: flex; justify-content: center; align-items: center; z-index: 1; touch-action: none; cursor: grab; }
         #photo-wrapper:active { cursor: grabbing; }
-        
-        #location-photo {
-            max-width: 100%; max-height: 100%; object-fit: contain;
-            display: none; box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
+        #location-photo { width: 100%; height: 100%; object-fit: contain; display: none; }
 
-        #loading-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(17, 24, 39, 0.95); z-index: 20;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
+        /* 載入畫面 */
+        #loading-overlay { background: rgba(17, 24, 39, 0.95); z-index: 20; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 
-        #ui-layer { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; z-index: 10; display: flex; flex-direction: column; 
-            justify-content: space-between; padding: 20px; box-sizing: border-box; 
-        }
-        
+        /* UI 層 (頂部資訊) */
+        #ui-layer { z-index: 10; padding: 15px; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-start; }
         .top-bar { display: flex; justify-content: space-between; pointer-events: auto; }
-        .info-box { background: rgba(0, 0, 0, 0.85); padding: 10px 20px; border-radius: 8px; font-size: 1.2rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); }
+        .info-box { background: rgba(0, 0, 0, 0.7); padding: 8px 16px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); }
         .timer-warning { color: #fc8181; animation: pulse 1s infinite; }
-        
-        /* 隱藏地圖後新增的浮動按鈕 */
-        #open-map-btn {
-            align-self: flex-end; pointer-events: auto;
-            background-color: #3b82f6; color: white; padding: 16px 28px; border-radius: 30px;
-            font-size: 1.3rem; font-weight: bold; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-            transition: transform 0.2s, background 0.2s; border: 2px solid rgba(255,255,255,0.3);
-            margin-bottom: 20px; margin-right: 10px;
+
+        /* =========================================
+           全新設計：固定於右下角的懸浮地圖按鈕 (FAB)
+           ========================================= */
+        #fab-map-btn {
+            position: fixed; bottom: 25px; right: 25px; z-index: 30; pointer-events: auto;
+            background-color: #3b82f6; color: white; width: 70px; height: 70px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 1.8rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); border: 3px solid rgba(255,255,255,0.3);
+            cursor: pointer; transition: transform 0.2s, background-color 0.2s;
         }
-        #open-map-btn:hover { transform: scale(1.05); background-color: #2563eb; }
-        
+        #fab-map-btn:hover { transform: scale(1.05); background-color: #2563eb; }
+        #fab-map-btn::after {
+            content: "估位置"; position: absolute; bottom: -22px; font-size: 0.8rem; 
+            font-weight: bold; background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+        }
+
         /* 彈出式地圖視窗 (Modal) */
         #map-modal {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.85); z-index: 40; display: none;
-            justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
-            pointer-events: auto; backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.9); z-index: 40; display: none;
+            justify-content: center; align-items: center; padding: 15px; pointer-events: auto;
         }
         #map-container { 
-            width: 100%; max-width: 800px; height: 70vh; 
-            background: white; border-radius: 16px; overflow: hidden; 
-            display: flex; flex-direction: column; position: relative;
+            width: 100%; max-width: 800px; height: 80%; background: white; border-radius: 16px; 
+            overflow: hidden; display: flex; flex-direction: column; position: relative;
             box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 4px solid #4b5563;
         }
-        .close-map-btn {
+        
+        .close-btn {
             position: absolute; top: 15px; right: 15px; z-index: 1000;
-            background: #ef4444; color: white; border: none; border-radius: 50%;
-            width: 45px; height: 45px; font-size: 1.5rem; cursor: pointer; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: background 0.2s;
-            display: flex; justify-content: center; align-items: center;
+            background: #ef4444; color: white; border: none; border-radius: 50%; width: 45px; height: 45px;
+            font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center;
         }
-        .close-map-btn:hover { background: #dc2626; }
+        
+        #guess-map { flex-grow: 1; width: 100%; background-color: #e5e5e5; cursor: crosshair; }
+        
+        .map-actions { display: flex; padding: 10px; background: #f3f4f6; gap: 10px; }
+        .map-actions button { flex: 1; padding: 15px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; transition: 0.2s; color: white; }
+        #guess-btn { background-color: #10b981; }
+        #guess-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
+
+        /* 其他覆蓋層 */
+        #result-overlay { background: rgba(17, 24, 39, 0.98); z-index: 50; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto; }
+        #result-map { width: 90%; max-width: 800px; height: 40%; border-radius: 12px; margin-bottom: 20px; border: 2px solid #374151; background-color: #e5e5e5; }
+        #end-screen, #start-screen { background: rgba(17, 24, 39, 0.98); z-index: 60; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow-y: auto; }
 
         @media (max-width: 768px) {
-            .info-box { font-size: 1rem; padding: 8px 12px; }
-            #open-map-btn { padding: 12px 20px; font-size: 1.1rem; margin-bottom: 10px; margin-right: 0;}
-            #map-container { height: 80vh; }
+            .info-box { font-size: 0.95rem; padding: 6px 10px; }
+            #fab-map-btn { width: 60px; height: 60px; font-size: 1.5rem; bottom: 30px; right: 20px; }
         }
-
-        #guess-map { flex-grow: 1; width: 100%; background-color: #e5e5e5; cursor: crosshair; }
-        #guess-btn { background-color: #10b981; color: white; border: none; padding: 16px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        #guess-btn:hover { background-color: #059669; }
-        #guess-btn:disabled { background-color: #6b7280; cursor: not-allowed; }
-
-        #result-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 24, 39, 0.95); z-index: 50;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto;
-        }
-        #result-map { width: 85%; height: 45vh; border-radius: 12px; margin-bottom: 20px; border: 2px solid #374151; background-color: #e5e5e5; }
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
@@ -107,72 +92,82 @@
 <body>
 
     <!-- 1. 初始畫面 -->
-    <div id="start-screen" class="absolute top-0 left-0 w-full h-full bg-gray-900 z-[60] flex flex-col items-center justify-center overflow-y-auto">
+    <div id="start-screen" class="fullscreen-layer">
         <div class="bg-gray-800 p-8 md:p-10 rounded-2xl shadow-2xl text-center border border-gray-700 max-w-lg w-full m-4">
             <h1 class="text-4xl font-bold mb-4 text-emerald-400"><i class="fas fa-search-location mr-3"></i>香港地理達人</h1>
-            <div class="inline-block bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full text-sm font-semibold mb-6 border border-emerald-700">終極評分版</div>
+            <div class="inline-block bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full text-sm font-semibold mb-6 border border-emerald-700">全平台完美支援版</div>
             <p class="text-gray-300 mb-6 text-left leading-relaxed text-sm md:text-base">
-                <i class="fas fa-globe-asia mr-2 text-blue-400"></i><b>題庫擴大至全港 18 區：</b> 加入更多新界及離島秘境。<br>
-                <i class="fas fa-eye-slash mr-2 text-yellow-400"></i><b>地圖無遮擋：</b> 點擊右下角按鈕才打開作答地圖。<br>
-                <i class="fas fa-ban mr-2 text-red-400"></i><b>智能過濾：</b> 自動排除地鐵站內、神像、黑白舊相等影響體驗的相片，且保證<b>絕不重複</b>。<br>
-                <i class="fas fa-medal mr-2 text-yellow-500"></i><b>全新評分系統：</b> 遊戲結束後，系統會根據你的總分給予你專屬的地理稱號！
+                <i class="fas fa-check-circle mr-2 text-green-400"></i><b>手機/平板完美修復：</b> 地圖不會再消失，相片比例正常！<br>
+                <i class="fas fa-map-pin mr-2 text-blue-400"></i><b>懸浮地圖按鈕：</b> 點擊右下角藍色圓形按鈕打開地圖。<br>
+                <i class="fas fa-robot mr-2 text-yellow-400"></i><b>自動過濾與防重：</b> 實時連接維基百科抽取香港 18 區實景，絕不重複。
             </p>
             <button onclick="startGame()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 shadow-lg">
-                開始隨機探索 <i class="fas fa-compass ml-2"></i>
+                開始挑戰 <i class="fas fa-play ml-2"></i>
             </button>
         </div>
     </div>
 
     <!-- 2. 遊戲主畫面 -->
-    <div id="game-container" style="display: none;">
-        <div id="photo-wrapper">
+    <div id="game-container" class="fullscreen-layer" style="display: none;">
+        
+        <div id="photo-wrapper" class="fullscreen-layer">
             <img id="location-photo" src="" alt="香港風景">
         </div>
         
-        <!-- 動態載入畫面 (隱藏地區提示) -->
-        <div id="loading-overlay" style="display: none;">
-            <i class="fas fa-camera-retro fa-spin text-6xl text-blue-400 mb-4"></i>
-            <h2 class="text-2xl font-bold text-white mb-2" id="loading-text">正在隨機尋找香港秘境...</h2>
-            <p class="text-gray-400 text-sm">請耐心等候高清現代實景載入</p>
+        <div id="loading-overlay" class="fullscreen-layer" style="display: none;">
+            <i class="fas fa-compass fa-spin text-6xl text-blue-400 mb-4"></i>
+            <h2 class="text-2xl font-bold text-white mb-2" id="loading-text">正在尋找香港秘境...</h2>
+            <p class="text-gray-400 text-sm">請耐心等候高清實景載入</p>
         </div>
 
-        <div id="ui-layer">
-            <div>
-                <div class="top-bar">
-                    <div class="info-box"><i class="fas fa-flag-checkered mr-2"></i>回合: <span id="round-display">1 / 5</span></div>
-                    <div class="info-box" id="timer-box"><i class="fas fa-clock mr-2 text-blue-400"></i><span id="time-display">--:--</span></div>
-                    <div class="info-box text-emerald-400"><i class="fas fa-star mr-2"></i>分數: <span id="score-display">0</span></div>
-                </div>
+        <div id="ui-layer" class="fullscreen-layer">
+            <div class="top-bar">
+                <div class="info-box"><i class="fas fa-flag-checkered mr-1"></i> <span id="round-display">1 / 5</span></div>
+                <div class="info-box" id="timer-box"><i class="fas fa-clock mr-1 text-blue-400"></i> <span id="time-display">--:--</span></div>
+                <div class="info-box text-emerald-400"><i class="fas fa-star mr-1"></i> <span id="score-display">0</span></div>
             </div>
             
-            <!-- 打開地圖按鈕 -->
-            <button id="open-map-btn" onclick="openMap()"><i class="fas fa-map-marked-alt mr-2"></i>我要估位置</button>
+            <div class="w-full flex justify-center mt-4 pointer-events-none">
+                <div class="bg-gray-800 bg-opacity-80 px-4 py-2 rounded-full text-sm font-bold text-gray-200 shadow-lg">
+                    <i class="fas fa-hand-pointer mr-1"></i> 雙指放大圖片尋找細節
+                </div>
+            </div>
+        </div>
+        
+        <!-- 全新：固定懸浮地圖按鈕 -->
+        <div id="fab-map-btn" onclick="openMap()">
+            <i class="fas fa-map-marked-alt"></i>
         </div>
         
         <!-- 彈出式地圖視窗 -->
-        <div id="map-modal">
+        <div id="map-modal" class="fullscreen-layer">
             <div id="map-container">
-                <button class="close-map-btn" onclick="closeMap()"><i class="fas fa-times"></i></button>
+                <button class="close-btn" onclick="closeMap()"><i class="fas fa-times"></i></button>
                 <div id="guess-map"></div>
-                <button id="guess-btn" onclick="submitGuess()" disabled>請先在地圖上標記</button>
+                <div class="map-actions">
+                    <button onclick="closeMap()" class="bg-gray-500 hover:bg-gray-600">收起地圖</button>
+                    <button id="guess-btn" onclick="submitGuess()" disabled>確定位置</button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- 3. 回合結算畫面 -->
-    <div id="result-overlay" style="display: none;">
+    <div id="result-overlay" class="fullscreen-layer" style="display: none;">
         <h2 class="text-3xl font-bold mb-2 text-white" id="result-title">回合結果</h2>
-        <p class="text-gray-300 mb-4 text-xl bg-gray-800 px-4 py-2 rounded-lg border border-gray-600" id="result-location-name">實際地點：-</p>
+        <p class="text-gray-300 mb-4 text-lg md:text-xl bg-gray-800 px-4 py-2 rounded-lg border border-gray-600 text-center max-w-md w-11/12" id="result-location-name">實際地點：-</p>
+        
         <div id="result-map"></div>
-        <div class="flex gap-8 mb-6 text-center bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-xl">
+        
+        <div class="flex gap-4 md:gap-8 mb-6 text-center bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700 shadow-xl w-11/12 max-w-md justify-center">
             <div>
-                <div class="text-gray-400 text-sm mb-1">誤差距離</div>
-                <div class="text-3xl font-bold text-yellow-400"><span id="distance-display">0</span> km</div>
+                <div class="text-gray-400 text-xs md:text-sm mb-1">誤差距離</div>
+                <div class="text-2xl md:text-3xl font-bold text-yellow-400"><span id="distance-display">0</span> km</div>
             </div>
             <div class="w-px bg-gray-600"></div>
             <div>
-                <div class="text-gray-400 text-sm mb-1">獲得分數</div>
-                <div class="text-3xl font-bold text-emerald-400">+<span id="points-display">0</span></div>
+                <div class="text-gray-400 text-xs md:text-sm mb-1">獲得分數</div>
+                <div class="text-2xl md:text-3xl font-bold text-emerald-400">+<span id="points-display">0</span></div>
             </div>
         </div>
         <button id="next-round-btn" onclick="nextRound()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-10 rounded-full text-xl transition duration-200 shadow-lg">
@@ -180,10 +175,10 @@
         </button>
     </div>
 
-    <!-- 4. 遊戲結束畫面 (評分系統) -->
-    <div id="end-screen" class="absolute top-0 left-0 w-full h-full bg-gray-900 z-[60] flex flex-col items-center justify-center overflow-y-auto" style="display: none;">
+    <!-- 4. 遊戲結束畫面 -->
+    <div id="end-screen" class="fullscreen-layer" style="display: none;">
         <div class="bg-gray-800 p-8 md:p-10 rounded-2xl shadow-2xl text-center border border-gray-700 max-w-lg w-full m-4">
-            <i id="grade-icon" class="fas fa-trophy text-6xl mb-4"></i>
+            <i id="grade-icon" class="fas fa-trophy text-6xl mb-4 text-yellow-500"></i>
             <h1 class="text-4xl font-bold mb-2 text-white">遊戲結束！</h1>
             
             <div class="bg-gray-900 rounded-lg p-6 mb-6 border border-gray-700">
@@ -191,11 +186,10 @@
                 <div class="text-5xl font-black text-emerald-400"><span id="final-score">0</span><span class="text-2xl text-gray-500 ml-2">/ 25000</span></div>
             </div>
 
-            <!-- 評分結果區 -->
-            <div class="mb-8 p-4 bg-gray-700 rounded-xl shadow-inner text-left">
+            <div class="mb-8 p-5 bg-gray-700 rounded-xl shadow-inner text-left">
                 <div class="text-gray-400 text-sm mb-1 uppercase tracking-wider">你的地理評級</div>
-                <h2 id="grade-title" class="text-3xl font-bold mb-2 text-yellow-400">香港地理達人</h2>
-                <p id="grade-desc" class="text-gray-200">太強了！你簡直係人肉 Google Map！</p>
+                <h2 id="grade-title" class="text-3xl font-bold mb-2 text-yellow-400">正在計算...</h2>
+                <p id="grade-desc" class="text-gray-200 text-sm md:text-base">...</p>
             </div>
             
             <button onclick="resetGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-200">
@@ -206,32 +200,17 @@
 
     <script>
         // ==========================================
-        // 🧠 核心邏輯升級：廣泛分佈、黑名單過濾、評分系統
+        // 核心邏輯 (全平台穩定修復)
         // ==========================================
         
-        // 擴大至 21 個種子位置，涵蓋 18 區及重要離島
         const hkSeedCenters = [
-            {lat: 22.28, lng: 114.15}, // 中西區
-            {lat: 22.27, lng: 114.17}, // 灣仔區
-            {lat: 22.28, lng: 114.22}, // 東區
-            {lat: 22.24, lng: 114.15}, // 南區
-            {lat: 22.31, lng: 114.17}, // 油尖旺區
-            {lat: 22.33, lng: 114.16}, // 深水埗區
-            {lat: 22.32, lng: 114.19}, // 九龍城區
-            {lat: 22.34, lng: 114.19}, // 黃大仙區
-            {lat: 22.31, lng: 114.22}, // 觀塘區
-            {lat: 22.37, lng: 114.11}, // 荃灣區
-            {lat: 22.35, lng: 114.13}, // 葵青區
-            {lat: 22.39, lng: 113.97}, // 屯門區
-            {lat: 22.44, lng: 114.02}, // 元朗區
-            {lat: 22.50, lng: 114.13}, // 北區
-            {lat: 22.44, lng: 114.16}, // 大埔區
-            {lat: 22.38, lng: 114.19}, // 沙田區
-            {lat: 22.38, lng: 114.27}, // 西貢區
-            {lat: 22.29, lng: 113.94}, // 東涌
-            {lat: 22.25, lng: 113.86}, // 大澳
-            {lat: 22.20, lng: 114.02}, // 長洲
-            {lat: 22.22, lng: 114.11}  // 南丫島
+            {lat: 22.28, lng: 114.15}, {lat: 22.27, lng: 114.17}, {lat: 22.28, lng: 114.22},
+            {lat: 22.24, lng: 114.15}, {lat: 22.31, lng: 114.17}, {lat: 22.33, lng: 114.16},
+            {lat: 22.32, lng: 114.19}, {lat: 22.34, lng: 114.19}, {lat: 22.31, lng: 114.22},
+            {lat: 22.37, lng: 114.11}, {lat: 22.35, lng: 114.13}, {lat: 22.39, lng: 113.97},
+            {lat: 22.44, lng: 114.02}, {lat: 22.50, lng: 114.13}, {lat: 22.44, lng: 114.16},
+            {lat: 22.38, lng: 114.19}, {lat: 22.38, lng: 114.27}, {lat: 22.29, lng: 113.94},
+            {lat: 22.25, lng: 113.86}, {lat: 22.20, lng: 114.02}, {lat: 22.22, lng: 114.11}
         ];
 
         let map, resultMap, panzoomInstance;
@@ -239,7 +218,7 @@
         let currentRound = 1; const maxRounds = 5; let totalScore = 0;
         let timerInterval; let timeLeft = 120;
         let currentActualLocation = null;
-        let usedLocationNames = new Set(); // 防重複記憶體
+        let usedLocationNames = new Set(); 
 
         function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
             const R = 6371; 
@@ -249,11 +228,28 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        function initPanzoom() {
+        // --- 修復 iPad 放大的關鍵：徹底重置縮放引擎 ---
+        function initOrResetPanzoom() {
             const elem = document.getElementById('location-photo');
             const wrapper = document.getElementById('photo-wrapper');
-            if (panzoomInstance) panzoomInstance.destroy();
-            panzoomInstance = Panzoom(elem, { maxScale: 8, minScale: 1, contain: 'outside', step: 0.3 });
+            
+            // 如果之前有縮放引擎，徹底銷毀並移除舊的 Event Listener
+            if (panzoomInstance) {
+                wrapper.removeEventListener('wheel', panzoomInstance.zoomWithWheel);
+                panzoomInstance.destroy();
+                panzoomInstance = null;
+            }
+            
+            // 強制重置圖片的 CSS Transform，確保 1:1 比例
+            elem.style.transform = 'none';
+            
+            // 重新建立乾淨的縮放引擎
+            panzoomInstance = Panzoom(elem, { 
+                maxScale: 8, 
+                minScale: 1, 
+                contain: 'outside', 
+                step: 0.3 
+            });
             wrapper.addEventListener('wheel', panzoomInstance.zoomWithWheel);
         }
 
@@ -266,22 +262,25 @@
             map.on('click', function(e) {
                 if (guessMarker) guessMarker.setLatLng(e.latlng); 
                 else guessMarker = L.marker(e.latlng).addTo(map);
+                
                 document.getElementById('guess-btn').disabled = false;
-                document.getElementById('guess-btn').innerText = "確定位置！";
             });
 
             resultMap = L.map('result-map', { center: hkCenter, zoom: 11 });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(resultMap);
         }
 
+        // 打開與關閉彈出式地圖
         function openMap() {
             document.getElementById('map-modal').style.display = 'flex';
-            setTimeout(() => { map.invalidateSize(); }, 50);
+            // 讓瀏覽器有時間顯示 Modal，然後強迫 Leaflet 重新計算大小 (極重要)
+            setTimeout(() => { map.invalidateSize(); }, 100);
         }
 
-        function closeMap() { document.getElementById('map-modal').style.display = 'none'; }
+        function closeMap() {
+            document.getElementById('map-modal').style.display = 'none';
+        }
 
-        // 從維基百科動態獲取一個隨機地點
         async function fetchRandomWikiLocation() {
             const center = hkSeedCenters[Math.floor(Math.random() * hkSeedCenters.length)];
             const url = `https://zh.wikipedia.org/w/api.php?action=query&format=json&prop=coordinates|pageimages&piprop=original&generator=geosearch&ggsradius=8000&ggscoord=${center.lat}|${center.lng}&ggslimit=50&origin=*`;
@@ -296,31 +295,24 @@
                     const imgUrl = p.original.source.toLowerCase();
                     const title = p.title;
                     
-                    // 1. 排除非實景圖片
                     if (imgUrl.endsWith('.svg') || imgUrl.endsWith('.png') || imgUrl.endsWith('.gif')) return false;
                     if (imgUrl.includes('map') || imgUrl.includes('logo') || imgUrl.includes('icon')) return false;
-                    
-                    // 2. 排除太容易的地鐵站/車站
                     if (title.includes('站') || title.includes('綫') || title.includes('車廠') || title.includes('交匯處')) return false;
                     
-                    // 3. 排除神像、觀音、佛像、寺廟 (避免恐怖感)
                     const scaryOrReligious = ['佛', '觀音', '神像', '廟', '寺', '大士', '菩薩', '天后'];
                     if (scaryOrReligious.some(keyword => title.includes(keyword))) return false;
 
-                    // 4. 排除舊相片/黑白相片 (透過網址年份或關鍵字判斷)
-                    const yearMatch = imgUrl.match(/(18|19)\d{2}/); // 例如 1950, 1980
+                    const yearMatch = imgUrl.match(/(18|19)\d{2}/);
                     if (yearMatch) return false;
                     const oldKeywords = ['old', 'bw', 'black_and_white', 'historical', 'vintage', '舊', '昔日', '歷史'];
                     if (oldKeywords.some(keyword => imgUrl.includes(keyword) || title.includes(keyword))) return false;
 
-                    // 5. 防止本局重複
                     if (usedLocationNames.has(title)) return false;
 
                     return true;
                 });
 
                 if (validPages.length === 0) return null;
-
                 const selectedPage = validPages[Math.floor(Math.random() * validPages.length)];
                 usedLocationNames.add(selectedPage.title);
                 
@@ -330,10 +322,7 @@
                     lng: selectedPage.coordinates[0].lon,
                     img: selectedPage.original.source
                 };
-            } catch (error) {
-                console.error("Wikipedia API 錯誤:", error);
-                return null;
-            }
+            } catch (error) { return null; }
         }
 
         function startGame() {
@@ -341,7 +330,6 @@
             document.getElementById('game-container').style.display = 'block';
             usedLocationNames.clear(); 
             initMaps();
-            initPanzoom();
             startRound();
         }
 
@@ -350,11 +338,10 @@
 
             document.getElementById('round-display').innerText = `${currentRound} / ${maxRounds}`;
             document.getElementById('result-overlay').style.display = 'none';
-            closeMap(); 
+            closeMap();
             
             if (guessMarker) { map.removeLayer(guessMarker); guessMarker = null; }
             document.getElementById('guess-btn').disabled = true;
-            document.getElementById('guess-btn').innerText = "請先在地圖上標記";
             
             const loadingOverlay = document.getElementById('loading-overlay');
             const imgElement = document.getElementById('location-photo');
@@ -366,22 +353,26 @@
 
             let locationData = null;
             let attempts = 0;
-            while (!locationData && attempts < 10) { // 增加重試次數以應付嚴格過濾
+            while (!locationData && attempts < 10) { 
                 locationData = await fetchRandomWikiLocation();
                 attempts++;
             }
 
             if (!locationData) {
-                setTimeout(startRound, 500); // 找不到就重新再抽一次
+                // 如果連續失敗，稍後再試，避免無窮迴圈
+                setTimeout(startRound, 1000);
                 return;
             }
 
             currentActualLocation = locationData;
 
+            // --- 解決手機沒圖片的關鍵：確保 onload 正確觸發並處理 UI ---
             imgElement.onload = function() {
                 loadingOverlay.style.display = 'none'; 
                 imgElement.style.display = 'block'; 
-                if (panzoomInstance) panzoomInstance.reset(); 
+                
+                // 圖片完全載入後，才初始化縮放引擎，防止計算錯誤導致過度放大
+                initOrResetPanzoom();
                 
                 timeLeft = 120; updateTimerDisplay();
                 document.getElementById('timer-box').classList.remove('timer-warning');
@@ -397,6 +388,7 @@
                 startRound(); 
             };
 
+            // 觸發載入
             imgElement.src = currentActualLocation.img;
         }
 
@@ -408,7 +400,7 @@
 
         function submitGuess(timeUp = false) {
             clearInterval(timerInterval);
-            closeMap(); 
+            closeMap();
             
             let gLat = 22.3, gLng = 114.17;
             if (guessMarker) { const pos = guessMarker.getLatLng(); gLat = pos.lat; gLng = pos.lng; }
@@ -431,7 +423,7 @@
             const wikiSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(currentActualLocation.name + " 香港")}`;
             document.getElementById('result-location-name').innerHTML = `
                 答案：<span class="text-white font-bold">${currentActualLocation.name}</span> 
-                <a href="${wikiSearchUrl}" target="_blank" class="ml-3 text-blue-400 hover:text-blue-300 text-sm underline"><i class="fas fa-external-link-alt"></i> 了解此地</a>
+                <a href="${wikiSearchUrl}" target="_blank" class="ml-2 text-blue-400 hover:text-blue-300 text-sm underline inline-block"><i class="fas fa-external-link-alt"></i> 搜尋</a>
             `;
             
             document.getElementById('distance-display').innerText = guessMarker ? distanceKm.toFixed(2) : "-";
@@ -465,7 +457,6 @@
 
         function nextRound() { currentRound++; startRound(); }
 
-        // --- 全新評分機制 ---
         function showEndScreen() {
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('end-screen').style.display = 'flex';
@@ -501,7 +492,6 @@
             gradeTitleEl.innerText = title;
             gradeTitleEl.className = `text-3xl font-bold mb-2 ${colorClass}`;
             document.getElementById('grade-desc').innerText = desc;
-            
             gradeIconEl.className = `fas ${iconClass} text-6xl mb-4 ${colorClass}`;
         }
 
