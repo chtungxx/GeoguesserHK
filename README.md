@@ -1,12 +1,13 @@
-[GeoV9.txt](https://github.com/user-attachments/files/25902840/GeoV9.txt)
-<!DOCTYPE html>
+[Uploading GeoV10.html…]()
+[Uploading GeoV10.html…]()
+[Uploadi<!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- 破解圖片防盜鏈 -->
     <meta name="referrer" content="no-referrer">
-    <title>香港地理達人 (全平台支援)</title>
+    <title>香港地理達人 (終極嚴格過濾版)</title>
     
     <!-- 穩定 CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -36,9 +37,7 @@
         .info-box { background: rgba(0, 0, 0, 0.7); padding: 8px 16px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); }
         .timer-warning { color: #fc8181; animation: pulse 1s infinite; }
 
-        /* =========================================
-           全新設計：固定於右下角的懸浮地圖按鈕 (FAB)
-           ========================================= */
+        /* 固定於右下角的懸浮地圖按鈕 (FAB) */
         #fab-map-btn {
             position: fixed; bottom: 25px; right: 25px; z-index: 30; pointer-events: auto;
             background-color: #3b82f6; color: white; width: 70px; height: 70px; border-radius: 50%;
@@ -95,11 +94,11 @@
     <div id="start-screen" class="fullscreen-layer">
         <div class="bg-gray-800 p-8 md:p-10 rounded-2xl shadow-2xl text-center border border-gray-700 max-w-lg w-full m-4">
             <h1 class="text-4xl font-bold mb-4 text-emerald-400"><i class="fas fa-search-location mr-3"></i>香港地理達人</h1>
-            <div class="inline-block bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full text-sm font-semibold mb-6 border border-emerald-700">全平台完美支援版</div>
+            <div class="inline-block bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full text-sm font-semibold mb-6 border border-emerald-700">終極嚴格過濾版</div>
             <p class="text-gray-300 mb-6 text-left leading-relaxed text-sm md:text-base">
-                <i class="fas fa-check-circle mr-2 text-green-400"></i><b>手機/平板完美修復：</b> 地圖不會再消失，相片比例正常！<br>
-                <i class="fas fa-map-pin mr-2 text-blue-400"></i><b>懸浮地圖按鈕：</b> 點擊右下角藍色圓形按鈕打開地圖。<br>
-                <i class="fas fa-robot mr-2 text-yellow-400"></i><b>自動過濾與防重：</b> 實時連接維基百科抽取香港 18 區實景，絕不重複。
+                <i class="fas fa-shield-alt mr-2 text-blue-400"></i><b>智能黑名單升級：</b> 已徹底封鎖校徽、標誌、高空鳥瞰圖、舊相片及地鐵站。<br>
+                <i class="fas fa-map-pin mr-2 text-emerald-400"></i><b>真實街景挑戰：</b> 你將會看到更多貼地、真實的香港街頭與建築。<br>
+                <i class="fas fa-medal mr-2 text-yellow-500"></i><b>達人評級：</b> 玩齊 5 個回合，看看你的香港地理評分達到什麼級別！
             </p>
             <button onclick="startGame()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-200 shadow-lg">
                 開始挑戰 <i class="fas fa-play ml-2"></i>
@@ -134,7 +133,7 @@
             </div>
         </div>
         
-        <!-- 全新：固定懸浮地圖按鈕 -->
+        <!-- 固定懸浮地圖按鈕 -->
         <div id="fab-map-btn" onclick="openMap()">
             <i class="fas fa-map-marked-alt"></i>
         </div>
@@ -200,7 +199,7 @@
 
     <script>
         // ==========================================
-        // 核心邏輯 (全平台穩定修復)
+        // 核心邏輯 (全平台支援 + 終極嚴格過濾)
         // ==========================================
         
         const hkSeedCenters = [
@@ -228,28 +227,16 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // --- 修復 iPad 放大的關鍵：徹底重置縮放引擎 ---
         function initOrResetPanzoom() {
             const elem = document.getElementById('location-photo');
             const wrapper = document.getElementById('photo-wrapper');
-            
-            // 如果之前有縮放引擎，徹底銷毀並移除舊的 Event Listener
             if (panzoomInstance) {
                 wrapper.removeEventListener('wheel', panzoomInstance.zoomWithWheel);
                 panzoomInstance.destroy();
                 panzoomInstance = null;
             }
-            
-            // 強制重置圖片的 CSS Transform，確保 1:1 比例
             elem.style.transform = 'none';
-            
-            // 重新建立乾淨的縮放引擎
-            panzoomInstance = Panzoom(elem, { 
-                maxScale: 8, 
-                minScale: 1, 
-                contain: 'outside', 
-                step: 0.3 
-            });
+            panzoomInstance = Panzoom(elem, { maxScale: 8, minScale: 1, contain: 'outside', step: 0.3 });
             wrapper.addEventListener('wheel', panzoomInstance.zoomWithWheel);
         }
 
@@ -262,7 +249,6 @@
             map.on('click', function(e) {
                 if (guessMarker) guessMarker.setLatLng(e.latlng); 
                 else guessMarker = L.marker(e.latlng).addTo(map);
-                
                 document.getElementById('guess-btn').disabled = false;
             });
 
@@ -270,17 +256,15 @@
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(resultMap);
         }
 
-        // 打開與關閉彈出式地圖
         function openMap() {
             document.getElementById('map-modal').style.display = 'flex';
-            // 讓瀏覽器有時間顯示 Modal，然後強迫 Leaflet 重新計算大小 (極重要)
             setTimeout(() => { map.invalidateSize(); }, 100);
         }
+        function closeMap() { document.getElementById('map-modal').style.display = 'none'; }
 
-        function closeMap() {
-            document.getElementById('map-modal').style.display = 'none';
-        }
-
+        // ==========================================
+        // 🛡️ 終極嚴格黑名單篩選器
+        // ==========================================
         async function fetchRandomWikiLocation() {
             const center = hkSeedCenters[Math.floor(Math.random() * hkSeedCenters.length)];
             const url = `https://zh.wikipedia.org/w/api.php?action=query&format=json&prop=coordinates|pageimages&piprop=original&generator=geosearch&ggsradius=8000&ggscoord=${center.lat}|${center.lng}&ggslimit=50&origin=*`;
@@ -295,18 +279,34 @@
                     const imgUrl = p.original.source.toLowerCase();
                     const title = p.title;
                     
+                    // 1. 徹底排除圖示、標誌、校徽
                     if (imgUrl.endsWith('.svg') || imgUrl.endsWith('.png') || imgUrl.endsWith('.gif')) return false;
-                    if (imgUrl.includes('map') || imgUrl.includes('logo') || imgUrl.includes('icon')) return false;
-                    if (title.includes('站') || title.includes('綫') || title.includes('車廠') || title.includes('交匯處')) return false;
-                    
-                    const scaryOrReligious = ['佛', '觀音', '神像', '廟', '寺', '大士', '菩薩', '天后'];
-                    if (scaryOrReligious.some(keyword => title.includes(keyword))) return false;
+                    const graphicWords = ['logo', 'badge', 'emblem', 'icon', 'coat_of_arms', 'chart', 'plan', 'map', '徽', '標誌', '圖案', '地圖', '校徽'];
+                    if (graphicWords.some(w => imgUrl.includes(w) || title.includes(w))) return false;
 
-                    const yearMatch = imgUrl.match(/(18|19)\d{2}/);
+                    // 2. 徹底排除高空鳥瞰圖、天際線、全景
+                    const aerialWords = ['aerial', 'skyline', 'bird', 'panorama', 'view_from', 'looking_down', '鳥瞰', '全景', '天際線', '高空', '俯瞰'];
+                    if (aerialWords.some(w => imgUrl.includes(w) || title.includes(w))) return false;
+
+                    // 3. 排除學校 (學校條目 90% 都是校徽)
+                    const schoolWords = ['中學', '小學', '學校', '書院', '幼稚園', '大學', 'school', 'college', 'university'];
+                    if (schoolWords.some(w => title.includes(w))) return false;
+
+                    // 4. 排除地鐵站、巴士總站等內部容易認出的地方
+                    const transitWords = ['站', '綫', '線', '車廠', '交匯處', '總站', '月台'];
+                    if (transitWords.some(w => title.includes(w))) return false;
+                    
+                    // 5. 排除神像、觀音、佛像、寺廟 (避免恐怖感)
+                    const scaryOrReligious = ['佛', '觀音', '神像', '廟', '寺', '大士', '菩薩', '天后'];
+                    if (scaryOrReligious.some(w => title.includes(w))) return false;
+
+                    // 6. 排除舊相片/黑白相片 (透過網址年份或關鍵字判斷)
+                    const yearMatch = imgUrl.match(/(18|19)\d{2}/); // 擋掉 18xx, 19xx 年的圖片
                     if (yearMatch) return false;
                     const oldKeywords = ['old', 'bw', 'black_and_white', 'historical', 'vintage', '舊', '昔日', '歷史'];
-                    if (oldKeywords.some(keyword => imgUrl.includes(keyword) || title.includes(keyword))) return false;
+                    if (oldKeywords.some(w => imgUrl.includes(w) || title.includes(w))) return false;
 
+                    // 7. 防止本局重複
                     if (usedLocationNames.has(title)) return false;
 
                     return true;
@@ -353,25 +353,22 @@
 
             let locationData = null;
             let attempts = 0;
-            while (!locationData && attempts < 10) { 
+            while (!locationData && attempts < 15) { // 加大嘗試次數，因為過濾條件變得很嚴格
                 locationData = await fetchRandomWikiLocation();
                 attempts++;
             }
 
             if (!locationData) {
-                // 如果連續失敗，稍後再試，避免無窮迴圈
                 setTimeout(startRound, 1000);
                 return;
             }
 
             currentActualLocation = locationData;
 
-            // --- 解決手機沒圖片的關鍵：確保 onload 正確觸發並處理 UI ---
             imgElement.onload = function() {
                 loadingOverlay.style.display = 'none'; 
                 imgElement.style.display = 'block'; 
                 
-                // 圖片完全載入後，才初始化縮放引擎，防止計算錯誤導致過度放大
                 initOrResetPanzoom();
                 
                 timeLeft = 120; updateTimerDisplay();
@@ -388,7 +385,6 @@
                 startRound(); 
             };
 
-            // 觸發載入
             imgElement.src = currentActualLocation.img;
         }
 
@@ -423,7 +419,7 @@
             const wikiSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(currentActualLocation.name + " 香港")}`;
             document.getElementById('result-location-name').innerHTML = `
                 答案：<span class="text-white font-bold">${currentActualLocation.name}</span> 
-                <a href="${wikiSearchUrl}" target="_blank" class="ml-2 text-blue-400 hover:text-blue-300 text-sm underline inline-block"><i class="fas fa-external-link-alt"></i> 搜尋</a>
+                <a href="${wikiSearchUrl}" target="_blank" class="ml-2 text-blue-400 hover:text-blue-300 text-sm underline inline-block"><i class="fas fa-external-link-alt"></i> 搜尋了解</a>
             `;
             
             document.getElementById('distance-display').innerText = guessMarker ? distanceKm.toFixed(2) : "-";
@@ -505,4 +501,5 @@
         }
     </script>
 </body>
-</html>
+</html>ng GeoV10.html…]()
+[Uploading GeoV10.html…]()
